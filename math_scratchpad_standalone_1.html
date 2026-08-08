@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math Scratchpad</title>
+<style>
+  :root{
+    --paper:#f7f5f0;
+    --grid:#dcd6c8;
+    --ink:#1f2a24;
+    --accent:#3d6b5c;
+    --accent-soft:#e4ede9;
+    --tab-idle:#efece2;
+    --danger:#a8503f;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family: 'Georgia', 'Iowan Old Style', serif;
+    background:#e9e5d8;
+    color:var(--ink);
+  }
+  .sp-wrap{
+    max-width:1100px;
+    margin:0 auto;
+    background:var(--paper);
+    min-height:100vh;
+    padding:22px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .sp-header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .sp-title{ font-size:1.4rem; font-weight:700; letter-spacing:0.02em; }
+  .sp-title span{ color:var(--accent); font-style:italic; }
+  .sp-status{
+    font-family:'Courier New', monospace;
+    font-size:0.72rem;
+    color:#8a8474;
+    min-width:120px;
+    text-align:right;
+  }
+  .sp-tabs{
+    display:flex;
+    align-items:flex-end;
+    gap:4px;
+    flex-wrap:wrap;
+    border-bottom:2px solid var(--ink);
+  }
+  .sp-tab{
+    font-family:'Courier New', monospace;
+    font-size:0.8rem;
+    padding:7px 14px;
+    background:var(--tab-idle);
+    border:1px solid #c9c2ae;
+    border-bottom:none;
+    border-radius:6px 6px 0 0;
+    cursor:pointer;
+    color:#5c5647;
+    position:relative;
+    top:1px;
+    max-width:180px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .sp-tab.active{
+    background:var(--paper);
+    color:var(--ink);
+    font-weight:700;
+    border-color:var(--ink);
+    border-bottom:2px solid var(--paper);
+  }
+  .sp-tab-add{
+    font-family:'Courier New', monospace;
+    font-size:0.85rem;
+    padding:6px 12px;
+    background:none;
+    border:1px dashed #a49c86;
+    border-radius:6px;
+    cursor:pointer;
+    color:#8a8474;
+    margin-left:4px;
+  }
+  .sp-tab-add:hover{ color:var(--accent); border-color:var(--accent); }
+
+  .sp-question{
+    background:var(--accent-soft);
+    border:1px solid #c3d6cc;
+    border-radius:8px;
+    padding:10px 12px;
+  }
+  .sp-question-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    cursor:pointer;
+  }
+  .sp-label{ font-size:0.7rem; text-transform:uppercase; letter-spacing:0.08em; color:#5c6f66; font-family:'Courier New',monospace; }
+  .sp-question-body{ margin-top:8px; display:flex; gap:14px; flex-wrap:wrap; }
+  .sp-question-body.collapsed{ display:none; }
+  .sp-qtext{
+    flex:1 1 260px;
+    min-width:220px;
+    min-height:70px;
+    font-family:'Georgia',serif;
+    font-size:0.92rem;
+    padding:8px 10px;
+    border:1px solid #b9c9c0;
+    border-radius:6px;
+    resize:vertical;
+    background:#fff;
+  }
+  .sp-qimg-zone{
+    flex:1 1 220px;
+    min-width:200px;
+    min-height:70px;
+    border:2px dashed #a9c2b7;
+    border-radius:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    background:#fff;
+    overflow:hidden;
+    text-align:center;
+  }
+  .sp-qimg-zone img{ max-width:100%; max-height:220px; display:block; }
+  .sp-qimg-hint{
+    font-family:'Courier New',monospace;
+    font-size:0.72rem;
+    color:#8a9c93;
+    padding:10px;
+  }
+  .sp-qimg-remove{
+    position:absolute; top:4px; right:4px;
+    background:rgba(255,255,255,0.9);
+    border:1px solid var(--danger);
+    color:var(--danger);
+    border-radius:4px;
+    font-family:'Courier New',monospace;
+    font-size:0.68rem;
+    padding:2px 6px;
+    cursor:pointer;
+  }
+
+  .sp-toolbar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    background:var(--accent-soft);
+    border-radius:8px;
+    padding:8px 12px;
+  }
+  .sp-group{ display:flex; align-items:center; gap:6px; }
+  .sp-swatch{ width:20px; height:20px; border-radius:50%; border:2px solid transparent; cursor:pointer; }
+  .sp-swatch.selected{ border-color:var(--ink); }
+  .sp-btn{
+    font-family:'Courier New', monospace;
+    font-size:0.78rem;
+    padding:6px 12px;
+    border-radius:6px;
+    border:1px solid #a9c2b7;
+    background:#fff;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .sp-btn:hover{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .sp-btn.danger:hover{ background:var(--danger); border-color:var(--danger); }
+  .sp-range{ width:80px; }
+
+  .sp-canvas-holder{
+    position:relative;
+    flex:1;
+    border:2px solid var(--ink);
+    border-radius:6px;
+    overflow:hidden;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:26px 26px;
+    background-color:#fffdf8;
+    min-height:420px;
+    touch-action:none;
+  }
+  canvas{ position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair; }
+  .sp-empty-hint{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    color:#b6ae98; font-family:'Courier New', monospace; font-size:0.85rem;
+    pointer-events:none; text-align:center;
+  }
+  .sp-footer{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'Courier New', monospace; font-size:0.72rem; color:#8a8474;
+  }
+  input[type=file]{ display:none; }
+</style>
+</head>
+<body>
+<div class="sp-wrap">
+  <div class="sp-header">
+    <div class="sp-title">Problem <span>Scratchpad</span></div>
+    <div class="sp-status" id="statusLine">loading…</div>
+  </div>
+
+  <div class="sp-tabs" id="tabsRow"></div>
+
+  <div class="sp-question">
+    <div class="sp-question-head" id="qHead">
+      <span class="sp-label">Problem statement (optional)</span>
+      <span class="sp-label" id="qToggle">hide ▲</span>
+    </div>
+    <div class="sp-question-body" id="qBody">
+      <textarea class="sp-qtext" id="qText" placeholder="Paste or type the question here…"></textarea>
+      <div class="sp-qimg-zone" id="qImgZone">
+        <div class="sp-qimg-hint" id="qImgHint">Paste a screenshot (Ctrl/Cmd+V) here,<br>or click to upload an image</div>
+        <input type="file" id="qImgInput" accept="image/*">
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-toolbar">
+    <div class="sp-group">
+      <span class="sp-label">Ink</span>
+      <div class="sp-swatch selected" data-color="#1f2a24" style="background:#1f2a24"></div>
+      <div class="sp-swatch" data-color="#2d5c8f" style="background:#2d5c8f"></div>
+      <div class="sp-swatch" data-color="#a8503f" style="background:#a8503f"></div>
+      <div class="sp-swatch" data-color="#3d6b5c" style="background:#3d6b5c"></div>
+    </div>
+    <div class="sp-group">
+      <span class="sp-label">Weight</span>
+      <input type="range" class="sp-range" id="widthRange" min="1" max="10" value="3">
+    </div>
+    <div class="sp-group">
+      <button class="sp-btn" id="eraserBtn">Eraser</button>
+      <button class="sp-btn" id="undoBtn">Undo</button>
+      <button class="sp-btn danger" id="clearBtn">Clear drawing</button>
+    </div>
+    <div class="sp-group" style="margin-left:auto;">
+      <button class="sp-btn" id="renameBtn">Rename tab</button>
+      <button class="sp-btn danger" id="deleteBtn">Delete problem</button>
+    </div>
+  </div>
+
+  <div class="sp-canvas-holder" id="canvasHolder">
+    <canvas id="board"></canvas>
+    <div class="sp-empty-hint" id="emptyHint">Draw here with your Wacom pen — pressure controls line weight.</div>
+  </div>
+
+  <div class="sp-footer">
+    <span id="strokeCount">0 strokes</span>
+    <span>Saved locally in this browser via IndexedDB — permanent once hosted on a real URL</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  const DB_NAME = 'mathScratchpadDB';
+  const STORE = 'problems';
+  let db;
+
+  function openDB(){
+    return new Promise((resolve, reject)=>{
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = (e)=>{
+        const _db = e.target.result;
+        if(!_db.objectStoreNames.contains(STORE)){
+          _db.createObjectStore(STORE, {keyPath:'id'});
+        }
+      };
+      req.onsuccess = ()=>{ db = req.result; resolve(db); };
+      req.onerror = ()=> reject(req.error);
+    });
+  }
+  function dbGetAll(){
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(STORE, 'readonly');
+      const req = tx.objectStore(STORE).getAll();
+      req.onsuccess = ()=> resolve(req.result || []);
+      req.onerror = ()=> reject(req.error);
+    });
+  }
+  function dbPut(obj){
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(obj);
+      tx.oncomplete = ()=> resolve();
+      tx.onerror = ()=> reject(tx.error);
+    });
+  }
+  function dbDelete(id){
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).delete(id);
+      tx.oncomplete = ()=> resolve();
+      tx.onerror = ()=> reject(tx.error);
+    });
+  }
+
+  const holder = document.getElementById('canvasHolder');
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+  const tabsRow = document.getElementById('tabsRow');
+  const statusLine = document.getElementById('statusLine');
+  const emptyHint = document.getElementById('emptyHint');
+  const strokeCountEl = document.getElementById('strokeCount');
+  const widthRange = document.getElementById('widthRange');
+  const qText = document.getElementById('qText');
+  const qImgZone = document.getElementById('qImgZone');
+  const qImgInput = document.getElementById('qImgInput');
+  const qImgHint = document.getElementById('qImgHint');
+  const qHead = document.getElementById('qHead');
+  const qBody = document.getElementById('qBody');
+  const qToggle = document.getElementById('qToggle');
+
+  let problems = [];
+  let active = null;   // full problem object currently loaded
+  let currentStroke = null;
+  let isEraser = false;
+  let currentColor = '#1f2a24';
+  let saveTimer = null;
+  let qCollapsed = false;
+
+  function uid(){ return 'p_' + Date.now() + '_' + Math.floor(Math.random()*10000); }
+
+  function setStatus(text){
+    statusLine.textContent = text;
+    if(text === 'saved'){
+      setTimeout(()=>{ if(statusLine.textContent === 'saved') statusLine.textContent='ready'; }, 1000);
+    }
+  }
+
+  function resizeCanvas(){
+    const rect = holder.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const newW = Math.round(rect.width * dpr);
+    const newH = Math.round(rect.height * dpr);
+    // skip if nothing actually changed, avoids wiping mid-stroke unnecessarily
+    if(canvas.width === newW && canvas.height === newH) return;
+    canvas.width = newW;
+    canvas.height = newH;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    redraw();
+  }
+  window.addEventListener('resize', resizeCanvas);
+  // the container's size can change from things other than a window resize
+  // (typing in the question box, uploading an image, collapsing the panel),
+  // so watch the container itself too — this is what keeps the pen position
+  // and the drawn stroke in sync.
+  if(window.ResizeObserver){
+    new ResizeObserver(()=> resizeCanvas()).observe(holder);
+  }
+
+  function renderTabs(){
+    tabsRow.innerHTML = '';
+    problems.sort((a,b)=> a.order - b.order).forEach(p=>{
+      const tab = document.createElement('div');
+      tab.className = 'sp-tab' + (active && p.id === active.id ? ' active' : '');
+      tab.textContent = p.label;
+      tab.title = p.label;
+      tab.addEventListener('click', ()=> switchTo(p.id));
+      tabsRow.appendChild(tab);
+    });
+    const addBtn = document.createElement('button');
+    addBtn.className = 'sp-tab-add';
+    addBtn.textContent = '+ new problem';
+    addBtn.addEventListener('click', addProblem);
+    tabsRow.appendChild(addBtn);
+  }
+
+  async function switchTo(id){
+    const p = problems.find(p=>p.id===id);
+    if(!p) return;
+    active = p;
+    qText.value = p.questionText || '';
+    renderQImage();
+    renderTabs();
+    redraw();
+    setStatus('ready');
+  }
+
+  function renderQImage(){
+    qImgZone.innerHTML = '';
+    if(active && active.questionImage){
+      const img = document.createElement('img');
+      img.src = active.questionImage;
+      qImgZone.appendChild(img);
+      const rm = document.createElement('div');
+      rm.className = 'sp-qimg-remove';
+      rm.textContent = 'remove';
+      rm.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        active.questionImage = null;
+        renderQImage();
+        persistActive();
+      });
+      qImgZone.appendChild(rm);
+    }else{
+      const hint = document.createElement('div');
+      hint.className = 'sp-qimg-hint';
+      hint.innerHTML = 'Paste a screenshot (Ctrl/Cmd+V) here,<br>or click to upload an image';
+      qImgZone.appendChild(hint);
+    }
+    qImgZone.appendChild(qImgInput);
+  }
+
+  async function addProblem(){
+    const label = prompt('Label this problem (e.g. "HW7 #3" or "SAT Math Q12"):', 'Problem ' + (problems.length + 1));
+    if(label === null) return;
+    const p = {
+      id: uid(),
+      label: label.trim() || ('Problem ' + (problems.length + 1)),
+      order: problems.length,
+      questionText: '',
+      questionImage: null,
+      strokes: []
+    };
+    problems.push(p);
+    await dbPut(p);
+    await switchTo(p.id);
+  }
+
+  async function renameActive(){
+    if(!active) return;
+    const name = prompt('Rename this problem:', active.label);
+    if(name && name.trim()){
+      active.label = name.trim();
+      await persistActive();
+      renderTabs();
+    }
+  }
+
+  async function deleteActive(){
+    if(problems.length === 1){
+      alert("Can't delete the only problem.");
+      return;
+    }
+    if(!confirm('Delete "' + active.label + '" and its drawing? This cannot be undone.')) return;
+    const idx = problems.findIndex(p=>p.id===active.id);
+    await dbDelete(active.id);
+    problems.splice(idx,1);
+    const next = problems[Math.max(0, idx-1)];
+    await switchTo(next.id);
+  }
+
+  function persistActive(){
+    if(!active) return Promise.resolve();
+    setStatus('saving…');
+    return dbPut(active).then(()=> setStatus('saved'));
+  }
+
+  function scheduleSave(){
+    clearTimeout(saveTimer);
+    setStatus('saving…');
+    saveTimer = setTimeout(()=> persistActive(), 350);
+  }
+
+  function redraw(){
+    ctx.clearRect(0,0,canvas.width, canvas.height);
+    if(!active) return;
+    active.strokes.forEach(drawStroke);
+    strokeCountEl.textContent = active.strokes.length + (active.strokes.length===1?' stroke':' strokes');
+    emptyHint.style.display = active.strokes.length === 0 ? 'block' : 'none';
+  }
+
+  function drawStroke(stroke){
+    if(stroke.points.length < 1) return;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.globalCompositeOperation = stroke.eraser ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = stroke.color;
+    if(stroke.points.length === 1){
+      const pt = stroke.points[0];
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, (pt.w||stroke.baseWidth)/2, 0, Math.PI*2);
+      ctx.fillStyle = stroke.color;
+      ctx.fill();
+      return;
+    }
+    for(let i=1;i<stroke.points.length;i++){
+      const a = stroke.points[i-1];
+      const b = stroke.points[i];
+      ctx.beginPath();
+      ctx.lineWidth = b.w || stroke.baseWidth;
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+  }
+
+  function getPos(e){
+    const rect = canvas.getBoundingClientRect();
+    return {x: e.clientX - rect.left, y: e.clientY - rect.top};
+  }
+
+  function pointerDown(e){
+    if(!active) return;
+    canvas.setPointerCapture(e.pointerId);
+    const pos = getPos(e);
+    const pressure = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
+    const baseWidth = parseFloat(widthRange.value);
+    currentStroke = {
+      color: isEraser ? '#000000' : currentColor,
+      eraser: isEraser,
+      baseWidth: baseWidth,
+      points: [{x: pos.x, y: pos.y, w: isEraser ? baseWidth*3 : baseWidth * (0.4 + pressure*1.4)}]
+    };
+  }
+
+  function pointerMove(e){
+    if(!currentStroke) return;
+    const pos = getPos(e);
+    const pressure = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
+    const w = isEraser ? currentStroke.baseWidth*3 : currentStroke.baseWidth * (0.4 + pressure*1.4);
+    currentStroke.points.push({x:pos.x, y:pos.y, w});
+    const pts = currentStroke.points;
+    const a = pts[pts.length-2], b = pts[pts.length-1];
+    ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.globalCompositeOperation = currentStroke.eraser ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = currentStroke.color;
+    ctx.lineWidth = b.w;
+    ctx.beginPath();
+    ctx.moveTo(a.x,a.y);
+    ctx.lineTo(b.x,b.y);
+    ctx.stroke();
+  }
+
+  function pointerUp(){
+    if(!currentStroke || !active) return;
+    active.strokes.push(currentStroke);
+    currentStroke = null;
+    strokeCountEl.textContent = active.strokes.length + (active.strokes.length===1?' stroke':' strokes');
+    emptyHint.style.display = 'none';
+    scheduleSave();
+  }
+
+  canvas.addEventListener('pointerdown', pointerDown);
+  canvas.addEventListener('pointermove', pointerMove);
+  canvas.addEventListener('pointerup', pointerUp);
+  canvas.addEventListener('pointercancel', pointerUp);
+
+  document.querySelectorAll('.sp-swatch').forEach(sw=>{
+    sw.addEventListener('click', ()=>{
+      document.querySelectorAll('.sp-swatch').forEach(s=>s.classList.remove('selected'));
+      sw.classList.add('selected');
+      currentColor = sw.dataset.color;
+      isEraser = false;
+      const eb = document.getElementById('eraserBtn');
+      eb.style.background='#fff'; eb.style.color='var(--ink)';
+    });
+  });
+
+  document.getElementById('eraserBtn').addEventListener('click', function(){
+    isEraser = !isEraser;
+    this.style.background = isEraser ? 'var(--accent)' : '#fff';
+    this.style.color = isEraser ? '#fff' : 'var(--ink)';
+  });
+
+  document.getElementById('undoBtn').addEventListener('click', ()=>{
+    if(!active) return;
+    active.strokes.pop();
+    redraw();
+    scheduleSave();
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    if(!active) return;
+    if(active.strokes.length && !confirm('Clear this problem\'s drawing?')) return;
+    active.strokes = [];
+    redraw();
+    scheduleSave();
+  });
+
+  document.getElementById('renameBtn').addEventListener('click', renameActive);
+  document.getElementById('deleteBtn').addEventListener('click', deleteActive);
+
+  // question text
+  let qTextTimer = null;
+  qText.addEventListener('input', ()=>{
+    if(!active) return;
+    active.questionText = qText.value;
+    clearTimeout(qTextTimer);
+    setStatus('saving…');
+    qTextTimer = setTimeout(()=> persistActive(), 400);
+  });
+
+  // question image: click to upload
+  qImgZone.addEventListener('click', ()=>{
+    if(active && active.questionImage) return;
+    qImgInput.click();
+  });
+  qImgInput.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(file) readImageFile(file);
+  });
+  function readImageFile(file){
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      if(!active) return;
+      active.questionImage = e.target.result;
+      renderQImage();
+      persistActive();
+    };
+    reader.readAsDataURL(file);
+  }
+  // paste anywhere on the page = import into question image, if it's an image
+  document.addEventListener('paste', (e)=>{
+    if(!active) return;
+    const items = e.clipboardData && e.clipboardData.items;
+    if(!items) return;
+    for(const item of items){
+      if(item.type.indexOf('image') !== -1){
+        const file = item.getAsFile();
+        if(file){ readImageFile(file); e.preventDefault(); }
+        return;
+      }
+    }
+  });
+
+  // collapse question panel
+  qHead.addEventListener('click', ()=>{
+    qCollapsed = !qCollapsed;
+    qBody.classList.toggle('collapsed', qCollapsed);
+    qToggle.textContent = qCollapsed ? 'show ▼' : 'hide ▲';
+  });
+
+  (async function init(){
+    await openDB();
+    problems = await dbGetAll();
+    if(problems.length === 0){
+      const p = {id:uid(), label:'Problem 1', order:0, questionText:'', questionImage:null, strokes:[]};
+      problems.push(p);
+      await dbPut(p);
+    }
+    await switchTo(problems.sort((a,b)=>a.order-b.order)[0].id);
+    resizeCanvas();
+    setStatus('ready');
+  })();
+})();
+</script>
+</body>
+</html>
